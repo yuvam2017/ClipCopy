@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ClipCopy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── LIGHT THEME ── */
+    :root,
+    [data-theme="light"] {
+      --bg:           #eef6ff;
+      --surface:      #ffffff;
+      --surface2:     #f4f9ff;
+      --border:       #c5ddf7;
+      --border-focus: #4da6ff;
+      --accent:       #1a7fe8;
+      --accent-light: #e0f0ff;
+      --text:         #0f2744;
+      --text-mid:     #3d6080;
+      --muted:        #90afc8;
+      --line-bg:      #f0f7ff;
+      --line-num:     #a0bcd6;
+      --glow-a:       rgba(167,210,255,0.35);
+      --glow-b:       rgba(200,230,255,0.30);
+      --card-shadow:  0 4px 6px rgba(30,80,140,0.04), 0 12px 40px rgba(30,80,140,0.09);
+      --toast-shadow: 0 8px 30px rgba(30,80,140,0.15);
+      --btn2-hover-bg:#e4f0fb;
+      --grid-line:    transparent;
+      --toggle-bg:    #dbeeff;
+      --toggle-border:#b0d4f5;
+      --toggle-text:  #1a7fe8;
+    }
+
+    /* ── DARK THEME ── */
+    [data-theme="dark"] {
+      --bg:           #0d0d0d;
+      --surface:      #161616;
+      --surface2:     #1e1e1e;
+      --border:       #2a2a2a;
+      --border-focus: #4da6ff;
+      --accent:       #c8f000;
+      --accent-light: rgba(200,240,0,0.12);
+      --text:         #f0f0f0;
+      --text-mid:     #a0b8cc;
+      --muted:        #555;
+      --line-bg:      #111;
+      --line-num:     #444;
+      --glow-a:       rgba(200,240,0,0.04);
+      --glow-b:       rgba(200,240,0,0.03);
+      --card-shadow:  0 0 60px rgba(200,240,0,0.06), 0 20px 60px rgba(0,0,0,0.6);
+      --toast-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      --btn2-hover-bg:#252525;
+      --grid-line:    rgba(200,240,0,0.04);
+      --toggle-bg:    #1e1e1e;
+      --toggle-border:#2a2a2a;
+      --toggle-text:  #c8f000;
+    }
+
+    /* ── BASE ── */
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      transition: background 0.35s, color 0.35s;
+    }
+
+    /* Light: soft cloud blobs | Dark: fine grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 0.35s;
+    }
+
+    [data-theme="light"] body::before {
+      background:
+        radial-gradient(ellipse 700px 500px at 10% 20%, var(--glow-a) 0%, transparent 70%),
+        radial-gradient(ellipse 500px 400px at 90% 80%, var(--glow-b) 0%, transparent 70%);
+    }
+
+    [data-theme="dark"] body::before {
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 40px 40px 36px;
+      width: 100%;
+      max-width: 620px;
+      box-shadow: var(--card-shadow);
+      transition: background 0.35s, border-color 0.35s, box-shadow 0.35s;
+    }
+
+    /* ── THEME TOGGLE ── */
+    .theme-toggle {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--toggle-bg);
+      border: 1.5px solid var(--toggle-border);
+      border-radius: 100px;
+      padding: 4px;
+      cursor: pointer;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .toggle-option {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 100px;
+      font-size: 14px;
+      transition: background 0.25s, transform 0.2s;
+      cursor: pointer;
+    }
+
+    [data-theme="light"] .toggle-option.light-opt {
+      background: var(--accent);
+      box-shadow: 0 2px 8px rgba(26,127,232,0.35);
+      transform: scale(1.05);
+    }
+
+    [data-theme="dark"] .toggle-option.dark-opt {
+      background: var(--accent);
+      box-shadow: 0 2px 8px rgba(200,240,0,0.3);
+      transform: scale(1.05);
+    }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-right: 90px; /* room for toggle */
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 100px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(74,166,255,0.2);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    [data-theme="dark"] .badge {
+      border-color: rgba(200,240,0,0.2);
+    }
+
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.1;
+      margin-bottom: 4px;
+      transition: color 0.3s;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+      transition: color 0.3s;
+    }
+
+    .header-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: background 0.3s, box-shadow 0.3s;
+    }
+
+    [data-theme="light"] .header-icon {
+      background: linear-gradient(135deg, #4da6ff 0%, #1a7fe8 100%);
+      box-shadow: 0 4px 14px rgba(26,127,232,0.35);
+    }
+
+    [data-theme="dark"] .header-icon {
+      background: linear-gradient(135deg, #c8f000 0%, #8fb800 100%);
+      box-shadow: 0 4px 14px rgba(200,240,0,0.3);
+    }
+
+    [data-theme="dark"] .header-icon svg { stroke: #0d0d0d; }
+
+    /* ── EDITOR ── */
+    .editor-wrap {
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .editor-wrap:focus-within {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(77,166,255,0.15);
+    }
+
+    [data-theme="dark"] .editor-wrap:focus-within {
+      box-shadow: 0 0 0 3px rgba(200,240,0,0.1);
+    }
+
+    .editor-toolbar {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: background 0.3s, border-color 0.3s;
+    }
+
+    .toolbar-label {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .toolbar-stats { display: flex; gap: 12px; }
+
+    .stat {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: 'JetBrains Mono', monospace;
+      transition: color 0.3s;
+    }
+
+    .stat span { color: var(--accent); font-weight: 600; }
+
+    .editor-body {
+      display: flex;
+      background: var(--surface);
+      min-height: 200px;
+      max-height: 380px;
+      transition: background 0.3s;
+    }
+
+    .line-numbers {
+      background: var(--line-bg);
+      border-right: 1px solid var(--border);
+      padding: 16px 0;
+      min-width: 46px;
+      text-align: right;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.75;
+      color: var(--line-num);
+      user-select: none;
+      overflow: hidden;
+      flex-shrink: 0;
+      transition: background 0.3s, border-color 0.3s, color 0.3s;
+    }
+
+    .line-numbers span { display: block; padding-right: 12px; }
+
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 16px;
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.75;
+      resize: none;
+      outline: none;
+      overflow-y: auto;
+      min-height: 200px;
+      max-height: 380px;
+      white-space: pre;
+      overflow-wrap: normal;
+      tab-size: 4;
+      transition: color 0.3s;
+    }
+
+    textarea::placeholder { color: var(--muted); font-style: italic; white-space: pre-wrap; }
+
+    /* ── BUTTONS ── */
+    .btn-row { display: flex; gap: 10px; }
+
+    .btn {
+      flex: 1;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.14s, box-shadow 0.14s, background 0.25s, color 0.25s;
+    }
+
+    .btn-primary {
+      color: #fff;
+    }
+
+    [data-theme="light"] .btn-primary {
+      background: linear-gradient(135deg, #4da6ff 0%, #1a7fe8 100%);
+      box-shadow: 0 4px 16px rgba(26,127,232,0.3);
+    }
+
+    [data-theme="dark"] .btn-primary {
+      background: var(--accent);
+      color: #0d0d0d;
+      box-shadow: 0 4px 16px rgba(200,240,0,0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+    }
+
+    [data-theme="light"] .btn-primary:hover { box-shadow: 0 8px 24px rgba(26,127,232,0.4); }
+    [data-theme="dark"]  .btn-primary:hover { box-shadow: 0 8px 24px rgba(200,240,0,0.35); }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text-mid);
+      border: 1.5px solid var(--border);
+      flex: 0 0 auto;
+      padding: 14px 16px;
+      transition: background 0.2s, border-color 0.2s, color 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: var(--btn2-hover-bg);
+      border-color: var(--border-focus);
+      color: var(--accent);
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--text);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 11px 20px 11px 12px;
+      border-radius: 100px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      z-index: 100;
+      white-space: nowrap;
+      box-shadow: var(--toast-shadow);
+    }
+
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .toast-dot {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .toast-dot.success { background: rgba(14,168,110,0.12); }
+    .toast-dot.warning { background: rgba(232,106,26,0.12); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%      { transform: translateX(-5px); }
+      40%      { transform: translateX(5px); }
+      60%      { transform: translateX(-3px); }
+      80%      { transform: translateX(3px); }
+    }
+    .shake { animation: shake 0.38s ease; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- Theme Toggle -->
+  <div class="theme-toggle" id="themeToggle" title="Toggle theme">
+    <div class="toggle-option light-opt" onclick="setTheme('light')" title="Light mode">☀️</div>
+    <div class="toggle-option dark-opt"  onclick="setTheme('dark')"  title="Dark mode">🌙</div>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <div class="badge">
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+        Clipboard Utility
+      </div>
+      <h1>ClipCopy</h1>
+      <p class="subtitle">Preserves every line break, indent &amp; number exactly as typed.</p>
+    </div>
+    <div class="header-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Editor -->
+  <div class="editor-wrap">
+    <div class="editor-toolbar">
+      <span class="toolbar-label">📄 Text Editor</span>
+      <div class="toolbar-stats">
+        <span class="stat">Lines: <span id="lineCount">1</span></span>
+        <span class="stat">Chars: <span id="charCount">0</span></span>
+      </div>
+    </div>
+    <div class="editor-body">
+      <div class="line-numbers" id="lineNumbers"><span>1</span></div>
+      <textarea
+        id="textInput"
+        placeholder="Type or paste your text here...&#10;&#10;  • New lines are preserved&#10;  • Indentation is kept&#10;  • Numbering copies exactly"
+        spellcheck="false"
+      ></textarea>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="copyText()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="9" y="9" width="13" height="13" rx="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+      Copy to Clipboard
+    </button>
+    <button class="btn btn-secondary" title="Clear text" onclick="clearText()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/>
+        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+        <path d="M10 11v6"/><path d="M14 11v6"/>
+        <path d="M9 6V4h6v2"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <div class="toast-dot success" id="toastDot">
+    <svg id="toastIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0ea86e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  </div>
+  <span id="toastMsg">Copied to clipboard!</span>
+</div>
+
+<script>
+  const html        = document.documentElement;
+  const textarea    = document.getElementById('textInput');
+  const lineNumbers = document.getElementById('lineNumbers');
+  const lineCountEl = document.getElementById('lineCount');
+  const charCountEl = document.getElementById('charCount');
+  const toast       = document.getElementById('toast');
+  const toastDot    = document.getElementById('toastDot');
+  const toastIcon   = document.getElementById('toastIcon');
+  const toastMsg    = document.getElementById('toastMsg');
+  let toastTimer;
+
+  /* ── Theme ── */
+  function setTheme(theme) {
+    html.setAttribute('data-theme', theme);
+    localStorage.setItem('clipcopy-theme', theme);
+  }
+
+  // Restore saved preference
+  const saved = localStorage.getItem('clipcopy-theme');
+  if (saved) setTheme(saved);
+
+  /* ── Editor stats & line numbers ── */
+  function updateStats() {
+    const val   = textarea.value;
+    const lines = val === '' ? 1 : val.split('\n').length;
+    charCountEl.textContent = val.length;
+    lineCountEl.textContent = lines;
+    let html = '';
+    for (let i = 1; i <= lines; i++) html += `<span>${i}</span>`;
+    lineNumbers.innerHTML = html;
+    lineNumbers.scrollTop = textarea.scrollTop;
+  }
+
+  textarea.addEventListener('input', updateStats);
+  textarea.addEventListener('scroll', () => { lineNumbers.scrollTop = textarea.scrollTop; });
+
+  // Tab key → real tab character
+  textarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = textarea.selectionStart, en = textarea.selectionEnd;
+      textarea.value = textarea.value.substring(0, s) + '\t' + textarea.value.substring(en);
+      textarea.selectionStart = textarea.selectionEnd = s + 1;
+      updateStats();
+    }
+  });
+
+  /* ── Copy ── */
+  function copyText() {
+    const text = textarea.value;
+    if (!text.trim()) {
+      textarea.classList.remove('shake');
+      void textarea.offsetWidth;
+      textarea.classList.add('shake');
+      textarea.addEventListener('animationend', () => textarea.classList.remove('shake'), { once: true });
+      showToast('Nothing to copy!', false);
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      showToast('Copied to clipboard!', true);
+    }).catch(() => {
+      const el = document.createElement('textarea');
+      el.value = text;
+      el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+      document.body.appendChild(el);
+      el.focus(); el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      showToast('Copied to clipboard!', true);
+    });
+  }
+
+  /* ── Clear ── */
+  function clearText() {
+    if (!textarea.value) return;
+    textarea.value = '';
+    updateStats();
+    showToast('Text cleared.', true);
+  }
+
+  /* ── Toast ── */
+  function showToast(msg, success) {
+    clearTimeout(toastTimer);
+    const color = success ? '#0ea86e' : '#e86a1a';
+    toastDot.className = 'toast-dot ' + (success ? 'success' : 'warning');
+    toastIcon.setAttribute('stroke', color);
+    toastIcon.innerHTML = success
+      ? '<polyline points="20 6 9 17 4 12"/>'
+      : '<line x1="12" y1="8" x2="12" y2="12"/><circle cx="12" cy="16" r="1" fill="currentColor"/>';
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  updateStats();
+</script>
+</body>
+</html>
